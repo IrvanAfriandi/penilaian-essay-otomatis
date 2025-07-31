@@ -231,7 +231,7 @@ export default function ExamDetail() {
               <Plus className="mr-2 h-4 w-4" />
               Tambah Soal
             </Button>
-            <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-2xl max-w-[95vw] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Soal Ujian & Kunci Jawaban</DialogTitle>
               </DialogHeader>
@@ -390,7 +390,7 @@ export default function ExamDetail() {
 
       {/* View/Edit Answer Modal */}
       <Dialog open={isViewAnswerOpen} onOpenChange={setIsViewAnswerOpen}>
-        <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl max-w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Jawaban - {selectedParticipant?.name}</DialogTitle>
           </DialogHeader>
@@ -432,7 +432,7 @@ export default function ExamDetail() {
 
       {/* Score Result Modal */}
       <Dialog open={isScoreResultOpen} onOpenChange={setIsScoreResultOpen}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-lg max-w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Hasil Penilaian - {selectedParticipant?.name}</DialogTitle>
           </DialogHeader>
