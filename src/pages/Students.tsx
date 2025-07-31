@@ -309,33 +309,30 @@ export default function Students() {
                 </div>
               </div>
 
-              <div className="flex gap-2 mt-4">
+              <div className="flex gap-2 mt-4 justify-center">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => openDetailModal(student)}
-                  className="flex-1"
+                  className="px-3"
                 >
-                  <Eye className="h-4 w-4 mr-1" />
-                  Detail
+                  <Eye className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => openEditModal(student)}
-                  className="flex-1"
+                  className="px-3"
                 >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Edit
+                  <Edit className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => openDeleteModal(student)}
-                  className="flex-1 text-destructive hover:text-destructive"
+                  className="px-3 text-destructive hover:text-destructive"
                 >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Hapus
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </CardContent>
