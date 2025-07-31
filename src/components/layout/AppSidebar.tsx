@@ -79,18 +79,16 @@ export function AppSidebar() {
             <SidebarMenu className="space-y-2">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      className={({ isActive }) => cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 transition-all duration-200",
-                        getNavCls({ isActive })
-                      )}
-                    >
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
-                      {!collapsed && <span className="truncate">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
+                  <NavLink 
+                    to={item.url} 
+                    className={({ isActive }) => cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2 transition-all duration-200 w-full",
+                      getNavCls({ isActive })
+                    )}
+                  >
+                    <item.icon className="h-5 w-5 flex-shrink-0" />
+                    {!collapsed && <span className="truncate">{item.title}</span>}
+                  </NavLink>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
