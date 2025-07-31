@@ -18,10 +18,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           {/* Header */}
           <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <SidebarTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-5 w-5" />
-                </Button>
+              <SidebarTrigger className="h-10 w-10 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex items-center justify-center">
+                <Menu className="h-5 w-5" />
               </SidebarTrigger>
               
               <div className="relative">
