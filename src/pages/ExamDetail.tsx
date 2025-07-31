@@ -296,7 +296,7 @@ export default function ExamDetail() {
             {participants.map((participant) => {
               const StatusIcon = getStatusIcon(participant.status);
               return (
-                <Card key={participant.id} className="bg-gradient-card border-0">
+                <Card key={participant.id} className="bg-gradient-card border-0 shadow-hover">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-medium">{participant.name}</h3>
@@ -436,9 +436,10 @@ export default function ExamDetail() {
           <DialogHeader>
             <DialogTitle>Hasil Penilaian - {selectedParticipant?.name}</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left: Total Score */}
-            <div className="flex flex-col items-center justify-center">
+          <div className="space-y-6">
+            {/* Total Score Section */}
+            <div className="flex flex-col items-center justify-center p-6 bg-gradient-card rounded-lg">
+              <h3 className="text-lg font-semibold mb-4">Nilai Total</h3>
               <ProgressCircle value={editingScore} size={150} strokeWidth={10}>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-primary">{editingScore}</div>
@@ -447,23 +448,28 @@ export default function ExamDetail() {
               </ProgressCircle>
             </div>
             
-            {/* Right: Individual Scores */}
+            {/* Individual Scores Section */}
             <div className="space-y-4">
-              <Label>Nilai Per Soal</Label>
-              {[1, 2, 3, 4, 5].map((num) => (
-                <div key={num} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
-                  <span>Soal {num}</span>
-                  <Input
-                    type="number"
-                    defaultValue={Math.floor(editingScore / 5)}
-                    className="w-20 text-center"
-                    max="20"
-                    min="0"
-                  />
-                </div>
-              ))}
+              <h3 className="text-lg font-semibold">Nilai Per Soal</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[1, 2, 3, 4, 5].map((num) => (
+                  <div key={num} className="flex justify-between items-center p-4 bg-muted/30 rounded-lg border shadow-sm">
+                    <span className="font-medium">Soal {num}</span>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        defaultValue={Math.floor(editingScore / 5)}
+                        className="w-16 text-center"
+                        max="20"
+                        min="0"
+                      />
+                      <span className="text-sm text-muted-foreground">/20</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
               
-              <Button onClick={handleSaveScore} className="w-full bg-gradient-primary hover:opacity-90 mt-4">
+              <Button onClick={handleSaveScore} className="w-full bg-gradient-primary hover:opacity-90 mt-6">
                 Simpan Nilai
               </Button>
             </div>
