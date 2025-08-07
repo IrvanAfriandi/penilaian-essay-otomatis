@@ -8,36 +8,28 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Custom Red Theme Colors */
-    --background: 351 82% 96%;
-    --foreground: 0 36% 25%;
+    /* Educational Theme Colors */
+    --background: 210 100% 97%;
+    --foreground: 210 22% 22%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 36% 25%;
+    --card-foreground: 210 22% 22%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 36% 25%;
+    --popover-foreground: 210 22% 22%;
 
-    /* Primary - Deep Red #BD1616 */
-    --primary: 0 77% 41%;
+    /* Primary - Educational Blue */
+    --primary: 210 100% 56%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 0 77% 65%;
-    --primary-dark: 0 77% 30%;
+    --primary-light: 210 100% 85%;
+    --primary-dark: 210 100% 40%;
 
-    /* Secondary - Light Pink #EFE6E6 */
-    --secondary: 0 25% 91%;
-    --secondary-foreground: 0 36% 25%;
-    --secondary-light: 0 25% 95%;
+    /* Secondary - Fresh Green */
+    --secondary: 142 69% 58%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 142 69% 85%;
 
-    /* Accent Red #FF2524 */
-    --accent-red: 0 100% 57%;
-    --accent-red-foreground: 0 0% 100%;
-
-    /* Medium Red #BF3131 */
-    --medium-red: 0 60% 47%;
-    --medium-red-foreground: 0 0% 100%;
-
-    /* Success - Keep green for status */
+    /* Success - Nature Green */
     --success: 120 60% 50%;
     --success-foreground: 0 0% 100%;
     --success-light: 120 60% 90%;
@@ -47,31 +39,31 @@ All colors MUST be HSL.
     --warning-foreground: 0 0% 100%;
     --warning-light: 38 92% 90%;
 
-    /* Error - Use your red palette */
-    --destructive: 0 100% 57%;
+    /* Error - Soft Red */
+    --destructive: 0 65% 51%;
     --destructive-foreground: 0 0% 100%;
-    --destructive-light: 0 100% 90%;
+    --destructive-light: 0 65% 90%;
 
-    --muted: 0 25% 94%;
-    --muted-foreground: 0 15% 55%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 0 25% 91%;
-    --accent-foreground: 0 36% 25%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 210 22% 22%;
 
-    --border: 0 25% 88%;
-    --input: 0 25% 88%;
-    --ring: 0 77% 41%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 210 100% 56%;
 
-    /* Red Theme Gradients */
+    /* Educational Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-dark)));
-    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--accent)));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--accent-red)), hsl(var(--medium-red)));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(0 25% 97%));
+    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--success)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary-light)), hsl(var(--secondary-light)));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 100% 98%));
 
-    /* Enhanced Shadows with Red Glow */
+    /* Shadows */
     --shadow-soft: 0 4px 20px hsl(var(--primary) / 0.1);
     --shadow-hover: 0 8px 25px hsl(var(--primary) / 0.15);
-    --shadow-glow: 0 0 30px hsl(var(--primary) / 0.3), 0 0 60px hsl(var(--accent-red) / 0.1);
+    --shadow-glow: 0 0 30px hsl(var(--primary) / 0.2);
 
     --radius: 0.75rem;
 
