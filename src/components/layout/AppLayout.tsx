@@ -16,7 +16,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
+          <header className="sticky top-0 z-50 h-16 border-b border-border bg-card px-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="h-10 w-10 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex items-center justify-center">
                 <Menu className="h-5 w-5" />
