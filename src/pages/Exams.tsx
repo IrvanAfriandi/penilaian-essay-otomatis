@@ -269,65 +269,65 @@ export default function Exams() {
       </div>
 
       {/* Exams Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {filteredExams.map((exam) => (
           <Card key={exam.id} className="bg-gradient-card shadow-soft hover:shadow-hover transition-all duration-300 border-0">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-foreground line-clamp-2 mb-2">{exam.title}</h3>
-                  <Badge className={getStatusColor(exam.status)}>
+                  <h3 className="font-semibold text-foreground line-clamp-2 mb-2 text-sm sm:text-base">{exam.title}</h3>
+                  <Badge className={`${getStatusColor(exam.status)} text-xs`}>
                     {exam.status}
                   </Badge>
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Mata Pelajaran:</span>
-                  <span className="font-medium">{exam.subject}</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">Mata Pelajaran:</span>
+                  <span className="font-medium text-sm truncate ml-2">{exam.subject}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Kelas:</span>
-                  <Badge variant="outline">{exam.class}</Badge>
+                  <span className="text-xs sm:text-sm text-muted-foreground">Kelas:</span>
+                  <Badge variant="outline" className="text-xs">{exam.class}</Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Tanggal:</span>
-                  <span className="font-medium">{new Date(exam.date).toLocaleDateString('id-ID')}</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">Tanggal:</span>
+                  <span className="font-medium text-sm">{new Date(exam.date).toLocaleDateString('id-ID')}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Progress:</span>
-                  <span className="font-medium">
+                  <span className="text-xs sm:text-sm text-muted-foreground">Progress:</span>
+                  <span className="font-medium text-sm">
                     {exam.completedParticipants}/{exam.totalParticipants} 
                     ({getCompletionPercentage(exam.completedParticipants, exam.totalParticipants)}%)
                   </span>
                 </div>
               </div>
 
-              <div className="flex gap-2 mt-4 justify-center">
+              <div className="flex gap-1 sm:gap-2 mt-3 sm:mt-4 justify-center">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => navigate(`/exams/${exam.id}`)}
-                  className="px-3"
+                  className="px-2 sm:px-3 h-8 w-8 sm:h-9 sm:w-auto"
                 >
-                  <Eye className="h-4 w-4" />
+                  <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => openEditModal(exam)}
-                  className="px-3"
+                  className="px-2 sm:px-3 h-8 w-8 sm:h-9 sm:w-auto"
                 >
-                  <Edit className="h-4 w-4" />
+                  <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => openDeleteModal(exam)}
-                  className="px-3 text-destructive hover:text-destructive"
+                  className="px-2 sm:px-3 h-8 w-8 sm:h-9 sm:w-auto text-destructive hover:text-destructive"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </div>
             </CardContent>

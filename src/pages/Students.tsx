@@ -272,67 +272,67 @@ export default function Students() {
       </div>
 
       {/* Students Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {filteredStudents.map((student) => (
           <Card key={student.id} className="bg-gradient-card shadow-soft hover:shadow-hover transition-all duration-300 border-0">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium text-sm sm:text-base">
                     {student.name.charAt(0)}
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">{student.name}</h3>
-                    <p className="text-sm text-muted-foreground">NISN: {student.nisn}</p>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold text-foreground text-sm sm:text-base truncate">{student.name}</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">NISN: {student.nisn}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Kelas:</span>
-                  <Badge variant="outline">{student.class}</Badge>
+                  <span className="text-xs sm:text-sm text-muted-foreground">Kelas:</span>
+                  <Badge variant="outline" className="text-xs">{student.class}</Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Jenis Kelamin:</span>
-                  <Badge className={getGenderColor(student.gender)}>{student.gender}</Badge>
+                  <span className="text-xs sm:text-sm text-muted-foreground">Jenis Kelamin:</span>
+                  <Badge className={`${getGenderColor(student.gender)} text-xs`}>{student.gender}</Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total Ujian:</span>
-                  <span className="font-medium">{student.totalExams}</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">Total Ujian:</span>
+                  <span className="font-medium text-sm">{student.totalExams}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Nilai Rata-rata:</span>
-                  <span className={`font-medium ${getScoreColor(student.averageScore)}`}>
+                  <span className="text-xs sm:text-sm text-muted-foreground">Nilai Rata-rata:</span>
+                  <span className={`font-medium text-sm ${getScoreColor(student.averageScore)}`}>
                     {student.averageScore.toFixed(1)}
                   </span>
                 </div>
               </div>
 
-              <div className="flex gap-2 mt-4 justify-center">
+              <div className="flex gap-1 sm:gap-2 mt-3 sm:mt-4 justify-center">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => openDetailModal(student)}
-                  className="px-3"
+                  className="px-2 sm:px-3 h-8 w-8 sm:h-9 sm:w-auto"
                 >
-                  <Eye className="h-4 w-4" />
+                  <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => openEditModal(student)}
-                  className="px-3"
+                  className="px-2 sm:px-3 h-8 w-8 sm:h-9 sm:w-auto"
                 >
-                  <Edit className="h-4 w-4" />
+                  <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => openDeleteModal(student)}
-                  className="px-3 text-destructive hover:text-destructive"
+                  className="px-2 sm:px-3 h-8 w-8 sm:h-9 sm:w-auto text-destructive hover:text-destructive"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </div>
             </CardContent>
