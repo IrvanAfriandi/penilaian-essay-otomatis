@@ -7,8 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 // Mock data
 const examsData = [
@@ -56,8 +59,12 @@ export default function Exams() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const ITEMS_PER_PAGE = 6;
 
   const [formData, setFormData] = useState({
     title: '',
@@ -74,6 +81,17 @@ export default function Exams() {
     const matchesClass = selectedClass === 'Semua Kelas' || exam.class === selectedClass;
     return matchesSearch && matchesSubject && matchesClass;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredExams.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentExams = filteredExams.slice(startIndex, endIndex);
+
+  // Reset page when filters change
+  const handleFilterChange = () => {
+    setCurrentPage(1);
+  };
 
   const handleAddExam = () => {
     const newExam = {
@@ -268,72 +286,91 @@ export default function Exams() {
         </Select>
       </div>
 
-      {/* Exams Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {filteredExams.map((exam) => (
-          <Card key={exam.id} className="bg-gradient-card shadow-soft hover:shadow-hover transition-all duration-300 border-0">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-foreground line-clamp-2 mb-2 text-sm sm:text-base">{exam.title}</h3>
-                  <Badge className={`${getStatusColor(exam.status)} text-xs`}>
-                    {exam.status}
-                  </Badge>
-                </div>
-              </div>
+      {/* Exams Grid or Carousel for Mobile */}
+      {filteredExams.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-muted-foreground text-lg mb-2">Data tidak ditemukan</div>
+          <div className="text-muted-foreground text-sm">
+            Tidak ada ujian yang sesuai dengan kriteria pencarian Anda.
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Desktop View */}
+          <div className="hidden sm:block">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {currentExams.map((exam) => (
+                <ExamCard 
+                  key={exam.id} 
+                  exam={exam} 
+                  onEdit={openEditModal}
+                  onDelete={openDeleteModal}
+                  onView={(exam) => navigate(`/exams/${exam.id}`)}
+                  getStatusColor={getStatusColor}
+                  getCompletionPercentage={getCompletionPercentage}
+                />
+              ))}
+            </div>
+          </div>
 
-              <div className="space-y-2 sm:space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs sm:text-sm text-muted-foreground">Mata Pelajaran:</span>
-                  <span className="font-medium text-sm truncate ml-2">{exam.subject}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs sm:text-sm text-muted-foreground">Kelas:</span>
-                  <Badge variant="outline" className="text-xs">{exam.class}</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs sm:text-sm text-muted-foreground">Tanggal:</span>
-                  <span className="font-medium text-sm">{new Date(exam.date).toLocaleDateString('id-ID')}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs sm:text-sm text-muted-foreground">Progress:</span>
-                  <span className="font-medium text-sm">
-                    {exam.completedParticipants}/{exam.totalParticipants} 
-                    ({getCompletionPercentage(exam.completedParticipants, exam.totalParticipants)}%)
-                  </span>
-                </div>
-              </div>
+          {/* Mobile Carousel */}
+          <div className="block sm:hidden">
+            <Carousel className="w-full max-w-xs mx-auto">
+              <CarouselContent>
+                {currentExams.map((exam) => (
+                  <CarouselItem key={exam.id}>
+                    <ExamCard 
+                      exam={exam} 
+                      onEdit={openEditModal}
+                      onDelete={openDeleteModal}
+                      onView={(exam) => navigate(`/exams/${exam.id}`)}
+                      getStatusColor={getStatusColor}
+                      getCompletionPercentage={getCompletionPercentage}
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
+          </div>
 
-              <div className="flex gap-1 sm:gap-2 mt-3 sm:mt-4 justify-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate(`/exams/${exam.id}`)}
-                  className="px-2 sm:px-3 h-8 w-8 sm:h-9 sm:w-auto"
-                >
-                  <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openEditModal(exam)}
-                  className="px-2 sm:px-3 h-8 w-8 sm:h-9 sm:w-auto"
-                >
-                  <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openDeleteModal(exam)}
-                  className="px-2 sm:px-3 h-8 w-8 sm:h-9 sm:w-auto text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Pagination className="mt-8">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    href="#"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                  />
+                </PaginationItem>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      href="#"
+                      onClick={() => setCurrentPage(page)}
+                      isActive={currentPage === page}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    href="#"
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+        </>
+      )}
 
       {/* Edit Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
@@ -411,33 +448,99 @@ export default function Exams() {
       </Dialog>
 
       {/* Delete Modal */}
-      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Hapus Ujian</DialogTitle>
-          </DialogHeader>
+      <AlertDialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Ujian</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus ujian berikut? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
           {selectedExam && (
-            <div className="space-y-4">
-              <p className="text-muted-foreground">
-                Apakah Anda yakin ingin menghapus ujian berikut?
-              </p>
-              <div className="p-4 bg-muted/30 rounded-lg">
-                <p className="font-medium">{selectedExam.title}</p>
-                <p className="text-sm text-muted-foreground">{selectedExam.subject} - {selectedExam.class}</p>
-                <p className="text-sm text-muted-foreground">Tanggal: {new Date(selectedExam.date).toLocaleDateString('id-ID')}</p>
-              </div>
-              <div className="flex gap-3">
-                <Button onClick={handleDeleteExam} variant="destructive" className="flex-1">
-                  Hapus
-                </Button>
-                <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)} className="flex-1">
-                  Batal
-                </Button>
-              </div>
+            <div className="p-4 bg-muted/30 rounded-lg my-4">
+              <p className="font-medium">{selectedExam.title}</p>
+              <p className="text-sm text-muted-foreground">{selectedExam.subject} - {selectedExam.class}</p>
+              <p className="text-sm text-muted-foreground">Tanggal: {new Date(selectedExam.date).toLocaleDateString('id-ID')}</p>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteExam} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+}
+
+// Separate ExamCard component for reusability
+function ExamCard({ exam, onEdit, onDelete, onView, getStatusColor, getCompletionPercentage }: any) {
+  return (
+    <Card className="bg-gradient-card shadow-soft hover:shadow-hover transition-all duration-300 border-0">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <h3 className="font-semibold text-foreground line-clamp-2 mb-2 text-sm sm:text-base">{exam.title}</h3>
+            <Badge className={`${getStatusColor(exam.status)} text-xs`}>
+              {exam.status}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="space-y-2 sm:space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-xs sm:text-sm text-muted-foreground">Mata Pelajaran:</span>
+            <span className="font-medium text-sm truncate ml-2">{exam.subject}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs sm:text-sm text-muted-foreground">Kelas:</span>
+            <Badge variant="outline" className="text-xs">{exam.class}</Badge>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs sm:text-sm text-muted-foreground">Tanggal:</span>
+            <span className="font-medium text-sm">{new Date(exam.date).toLocaleDateString('id-ID')}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs sm:text-sm text-muted-foreground">Progress:</span>
+            <span className="font-medium text-sm">
+              {exam.completedParticipants}/{exam.totalParticipants} 
+              ({getCompletionPercentage(exam.completedParticipants, exam.totalParticipants)}%)
+            </span>
+          </div>
+        </div>
+
+        <div className="flex gap-1 sm:gap-2 mt-3 sm:mt-4 justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onView(exam)}
+            className="px-2 sm:px-3 h-8 w-8 sm:h-9 sm:w-auto"
+          >
+            <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline ml-1">Detail</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEdit(exam)}
+            className="px-2 sm:px-3 h-8 w-8 sm:h-9 sm:w-auto"
+          >
+            <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline ml-1">Edit</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onDelete(exam)}
+            className="px-2 sm:px-3 h-8 w-8 sm:h-9 sm:w-auto text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline ml-1">Hapus</span>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

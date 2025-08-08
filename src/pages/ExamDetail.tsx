@@ -1,17 +1,22 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Printer, Plus, Upload, Eye, Edit, Check, X } from 'lucide-react';
+import { ArrowLeft, Printer, Plus, Upload, Eye, Edit, Check, X, FileText, Users, Search, Download, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useToast } from '@/hooks/use-toast';
 import { ProgressCircle } from '@/components/ui/progress-circle';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
-// Mock data
+// Mock data for exam details
 const examDetail = {
   id: 1,
   title: 'Ujian Bahasa Indonesia - Kelas 5A',
@@ -37,131 +42,124 @@ const examDetail = {
   ]
 };
 
-const participants = [
-  {
-    id: 1,
-    name: 'Ahmad Rizki',
-    status: 'completed',
-    score: 85,
-    answers: [
-      'Gotong royong adalah bekerja sama untuk kepentingan bersama...',
-      'Liburan ke pantai bersama keluarga sangat menyenangkan...',
-      'Membaca buku dapat menambah pengetahuan...',
-      'Bunga mawar di taman indah, Kupu-kupu hinggap di ranting...',
-      'Dongeng bercerita tentang manusia, fabel tentang hewan...'
-    ]
-  },
-  {
-    id: 2,
-    name: 'Siti Nurhaliza',
-    status: 'not_completed'
-  },
-  {
-    id: 3,
-    name: 'Budi Santoso',
-    status: 'completed',
-    score: 78,
-    answers: [
-      'Gotong royong adalah membantu sesama...',
-      'Saya pergi ke kebun binatang...',
-      'Buku memberikan ilmu pengetahuan...',
-      'Pohon hijau di halaman, Burung berkicau merdu...',
-      'Dongeng adalah cerita rakyat...'
-    ]
-  },
-  {
-    id: 4,
-    name: 'Dewi Sartika',
-    status: 'not_completed'
-  }
+// Mock data for all students in class 5A
+const allStudents = [
+  { id: 1, name: 'Ahmad Rizki', nisn: '0051234567', status: 'completed', score: 85, inExam: true },
+  { id: 2, name: 'Siti Nurhaliza', nisn: '0051234568', status: 'not_completed', inExam: true },
+  { id: 3, name: 'Budi Santoso', nisn: '0051234569', status: 'completed', score: 78, inExam: true },
+  { id: 4, name: 'Dewi Sartika', nisn: '0051234570', status: 'not_completed', inExam: true },
+  { id: 5, name: 'Rahman Ali', nisn: '0051234571', status: 'not_in_exam', inExam: false },
+  { id: 6, name: 'Sari Indah', nisn: '0051234572', status: 'not_in_exam', inExam: false },
+  { id: 7, name: 'Doni Pratama', nisn: '0051234573', status: 'not_in_exam', inExam: false },
+  { id: 8, name: 'Maya Putri', nisn: '0051234574', status: 'not_in_exam', inExam: false },
 ];
 
 export default function ExamDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [isAddQuestionsOpen, setIsAddQuestionsOpen] = useState(false);
-  const [isUploadAnswerOpen, setIsUploadAnswerOpen] = useState(false);
-  const [isViewAnswerOpen, setIsViewAnswerOpen] = useState(false);
-  const [isEditScoreOpen, setIsEditScoreOpen] = useState(false);
-  const [isProcessingOpen, setIsProcessingOpen] = useState(false);
-  const [isScoreResultOpen, setIsScoreResultOpen] = useState(false);
-  const [selectedParticipant, setSelectedParticipant] = useState<any>(null);
-  
+  // State management
   const [questions, setQuestions] = useState(examDetail.questions);
   const [answerKeys, setAnswerKeys] = useState(examDetail.answerKeys);
-  const [uploadedAnswers, setUploadedAnswers] = useState(['', '', '', '', '']);
-  const [editingScore, setEditingScore] = useState(0);
+  const [students, setStudents] = useState(allStudents);
+  const [questionImages, setQuestionImages] = useState<{ [key: number]: { file: File | null, preview: string | null, grayscale: boolean } }>({});
+  const [participantSearch, setParticipantSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  // Modal states
+  const [isEditQuestionsOpen, setIsEditQuestionsOpen] = useState(false);
+  const [isInfoQuestionsOpen, setIsInfoQuestionsOpen] = useState(false);
+  const [isAddParticipantsOpen, setIsAddParticipantsOpen] = useState(false);
+  const [isPreviewPdfOpen, setIsPreviewPdfOpen] = useState(false);
+  const [isUploadAnswerOpen, setIsUploadAnswerOpen] = useState(false);
+  const [isProcessingOpen, setIsProcessingOpen] = useState(false);
+  const [selectedParticipant, setSelectedParticipant] = useState<any>(null);
 
+  const ITEMS_PER_PAGE = 6;
+
+  // Filter participating students
+  const participatingStudents = students.filter(student => student.inExam);
+  const filteredParticipants = participatingStudents.filter(student => 
+    student.name.toLowerCase().includes(participantSearch.toLowerCase())
+  );
+
+  // Pagination for participants
+  const totalPages = Math.ceil(filteredParticipants.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentParticipants = filteredParticipants.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Event handlers
   const handlePrintExam = () => {
+    window.print();
     toast({
-      title: "Mencetak Lembar Soal",
-      description: "Lembar soal sedang disiapkan untuk dicetak.",
+      title: "Lembar Soal Dicetak",
+      description: "Lembar soal berhasil dicetak.",
     });
   };
 
   const handleSaveQuestions = () => {
-    setIsAddQuestionsOpen(false);
+    setIsEditQuestionsOpen(false);
     toast({
       title: "Berhasil!",
       description: "Soal ujian berhasil disimpan.",
     });
   };
 
-  const handleUploadAnswer = (participant: any) => {
-    setSelectedParticipant(participant);
-    setIsUploadAnswerOpen(true);
+  const handleImageUpload = (questionIndex: number, file: File) => {
+    const preview = URL.createObjectURL(file);
+    setQuestionImages(prev => ({
+      ...prev,
+      [questionIndex]: { file, preview, grayscale: false }
+    }));
   };
 
-  const handleProcessUpload = () => {
-    setIsUploadAnswerOpen(false);
-    setIsProcessingOpen(true);
-    
-    // Simulate processing
-    setTimeout(() => {
-      setIsProcessingOpen(false);
-      // Show answer form with uploaded image
-      setUploadedAnswers([
-        'Gotong royong adalah kegiatan bersama...',
-        'Liburan paling berkesan adalah...',
-        'Manfaat membaca buku antara lain...',
-        'Bunga mekar di taman...',
-        'Dongeng adalah cerita tentang...'
-      ]);
-      setIsViewAnswerOpen(true);
-    }, 2000);
+  const toggleImageGrayscale = (questionIndex: number) => {
+    setQuestionImages(prev => ({
+      ...prev,
+      [questionIndex]: {
+        ...prev[questionIndex],
+        grayscale: !prev[questionIndex]?.grayscale
+      }
+    }));
   };
 
-  const handleProcessGrading = () => {
-    setIsViewAnswerOpen(false);
-    setIsProcessingOpen(true);
-    
-    // Simulate grading
-    setTimeout(() => {
-      setIsProcessingOpen(false);
-      setEditingScore(82);
-      setIsScoreResultOpen(true);
-    }, 2000);
+  const handleToggleParticipant = (studentId: number) => {
+    setStudents(prev => prev.map(student => 
+      student.id === studentId 
+        ? { ...student, inExam: !student.inExam }
+        : student
+    ));
   };
 
-  const handleSaveScore = () => {
-    setIsScoreResultOpen(false);
+  const handleSaveParticipants = () => {
+    setIsAddParticipantsOpen(false);
     toast({
       title: "Berhasil!",
-      description: "Nilai berhasil disimpan.",
+      description: "Peserta ujian berhasil diperbarui.",
     });
   };
 
-  const handleViewAnswer = (participant: any) => {
-    setSelectedParticipant(participant);
-    setIsViewAnswerOpen(true);
+  const handlePreviewPdf = () => {
+    setIsPreviewPdfOpen(true);
   };
 
-  const handleEditScore = (participant: any) => {
-    setSelectedParticipant(participant);
-    setEditingScore(participant.score);
-    setIsEditScoreOpen(true);
+  const handleExportPdf = async () => {
+    const pdf = new jsPDF();
+    pdf.text('Lembar Soal Ujian', 20, 20);
+    pdf.text(examDetail.title, 20, 30);
+    
+    questions.forEach((question, index) => {
+      const yPosition = 50 + (index * 30);
+      pdf.text(`${index + 1}. ${question}`, 20, yPosition);
+    });
+    
+    pdf.save(`${examDetail.title}.pdf`);
+    toast({
+      title: "Berhasil!",
+      description: "PDF berhasil diunduh.",
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -195,179 +193,408 @@ export default function ExamDetail() {
         </Button>
       </div>
 
-      {/* Exam Info */}
-      <Card className="bg-gradient-card shadow-soft border-0">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div>
-              <Label className="text-sm text-muted-foreground">Mata Pelajaran</Label>
-              <p className="font-medium">{examDetail.subject}</p>
-            </div>
-            <div>
-              <Label className="text-sm text-muted-foreground">Kelas</Label>
-              <p className="font-medium">{examDetail.class}</p>
-            </div>
-            <div>
-              <Label className="text-sm text-muted-foreground">Tanggal</Label>
-              <p className="font-medium">{new Date(examDetail.date).toLocaleDateString('id-ID')}</p>
-            </div>
-            <div>
-              <Label className="text-sm text-muted-foreground">Status</Label>
-              <Badge className="bg-warning text-warning-foreground">{examDetail.status}</Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Questions Section */}
-      <Card className="bg-card shadow-soft border-0">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Soal Ujian</CardTitle>
-          <Dialog open={isAddQuestionsOpen} onOpenChange={setIsAddQuestionsOpen}>
-            <Button
-              onClick={() => setIsAddQuestionsOpen(true)}
-              className="bg-gradient-secondary hover:opacity-90"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Tambah Soal
-            </Button>
-            <DialogContent className="sm:max-w-2xl max-w-[95vw] max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Soal Ujian & Kunci Jawaban</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6">
-                {[1, 2, 3, 4, 5].map((num) => (
-                  <div key={num} className="space-y-3">
-                    <Label>Soal {num}</Label>
-                    <Textarea
-                      value={questions[num - 1] || ''}
-                      onChange={(e) => {
-                        const newQuestions = [...questions];
-                        newQuestions[num - 1] = e.target.value;
-                        setQuestions(newQuestions);
-                      }}
-                      placeholder={`Masukkan soal nomor ${num}`}
-                      className="min-h-[80px]"
-                    />
-                    <Label>Kunci Jawaban {num}</Label>
-                    <Textarea
-                      value={answerKeys[num - 1] || ''}
-                      onChange={(e) => {
-                        const newAnswerKeys = [...answerKeys];
-                        newAnswerKeys[num - 1] = e.target.value;
-                        setAnswerKeys(newAnswerKeys);
-                      }}
-                      placeholder={`Masukkan kunci jawaban nomor ${num}`}
-                      className="min-h-[60px]"
-                    />
-                  </div>
-                ))}
-                <div className="flex gap-3 pt-4">
-                  <Button onClick={handleSaveQuestions} className="flex-1 bg-gradient-primary hover:opacity-90">
-                    Simpan
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsAddQuestionsOpen(false)} className="flex-1">
-                    Batal
-                  </Button>
+      {/* Main Layout - Left Large Card, Right Two Stacked Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Large Card - Exam Information */}
+        <div className="lg:col-span-2">
+          <Card className="bg-gradient-card shadow-soft border-0 h-full">
+            <CardHeader>
+              <CardTitle>Informasi Ujian</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-sm text-muted-foreground">Mata Pelajaran</Label>
+                  <p className="font-medium">{examDetail.subject}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Kelas</Label>
+                  <p className="font-medium">{examDetail.class}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Tanggal</Label>
+                  <p className="font-medium">{new Date(examDetail.date).toLocaleDateString('id-ID')}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Status</Label>
+                  <Badge className="bg-warning text-warning-foreground">{examDetail.status}</Badge>
                 </div>
               </div>
-            </DialogContent>
-          </Dialog>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {questions.map((question, index) => (
-              <div key={index} className="p-4 bg-muted/30 rounded-lg">
-                <p className="font-medium text-sm text-muted-foreground mb-2">Soal {index + 1}</p>
-                <p className="text-foreground">{question}</p>
+              
+              <div>
+                <Label className="text-sm text-muted-foreground">Progress Peserta</Label>
+                <div className="flex items-center gap-4 mt-2">
+                  <ProgressCircle 
+                    value={Math.round((examDetail.completedParticipants / examDetail.totalParticipants) * 100)} 
+                    size={80} 
+                    strokeWidth={8}
+                  >
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-primary">
+                        {Math.round((examDetail.completedParticipants / examDetail.totalParticipants) * 100)}%
+                      </div>
+                    </div>
+                  </ProgressCircle>
+                  <div>
+                    <p className="text-sm">
+                      <span className="font-medium">{examDetail.completedParticipants}</span> dari{' '}
+                      <span className="font-medium">{examDetail.totalParticipants}</span> siswa telah selesai
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {examDetail.totalParticipants - examDetail.completedParticipants} siswa belum mengumpulkan
+                    </p>
+                  </div>
+                </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+
+              <div>
+                <Label className="text-sm text-muted-foreground">Preview Soal</Label>
+                <div className="space-y-3 mt-2">
+                  {questions.slice(0, 3).map((question, index) => (
+                    <div key={index} className="p-3 bg-muted/30 rounded-lg">
+                      <p className="font-medium text-xs text-muted-foreground mb-1">Soal {index + 1}</p>
+                      <p className="text-sm text-foreground line-clamp-2">{question}</p>
+                    </div>
+                  ))}
+                  {questions.length > 3 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      +{questions.length - 3} soal lainnya
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - Two Stacked Cards */}
+        <div className="space-y-6">
+          {/* Right Card 1 - Question Management */}
+          <Card className="bg-card shadow-soft border-0">
+            <CardHeader>
+              <CardTitle className="text-lg">Kelola Soal</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button
+                onClick={() => setIsInfoQuestionsOpen(true)}
+                variant="outline"
+                className="w-full justify-start"
+              >
+                <Info className="mr-2 h-4 w-4" />
+                Info Soal
+              </Button>
+              <Button
+                onClick={() => setIsEditQuestionsOpen(true)}
+                className="w-full justify-start bg-gradient-secondary hover:opacity-90"
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit Soal
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Right Card 2 - Participant Management */}
+          <Card className="bg-card shadow-soft border-0">
+            <CardHeader>
+              <CardTitle className="text-lg">Kelola Peserta</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button
+                onClick={() => setIsAddParticipantsOpen(true)}
+                variant="outline"
+                className="w-full justify-start"
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Tambah Peserta
+              </Button>
+              <Button
+                onClick={handlePreviewPdf}
+                variant="outline"
+                className="w-full justify-start"
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                Preview Lembar Jawaban
+              </Button>
+              <Button
+                onClick={handleExportPdf}
+                className="w-full justify-start bg-gradient-primary hover:opacity-90"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export PDF
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {/* Participants Section */}
       <Card className="bg-card shadow-soft border-0">
-        <CardHeader>
-          <CardTitle>Peserta Ujian ({participants.length} siswa)</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Peserta Ujian ({participatingStudents.length} siswa)</CardTitle>
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cari nama peserta..."
+              value={participantSearch}
+              onChange={(e) => setParticipantSearch(e.target.value)}
+              className="w-64"
+            />
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {participants.map((participant) => {
-              const StatusIcon = getStatusIcon(participant.status);
-              return (
-                <Card key={participant.id} className="bg-gradient-card border-0 shadow-hover">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-medium">{participant.name}</h3>
-                      <Badge className={getStatusColor(participant.status)}>
-                        <StatusIcon className="h-3 w-3 mr-1" />
-                        {participant.status === 'completed' ? 'Selesai' : 'Belum Upload'}
-                      </Badge>
-                    </div>
+          {filteredParticipants.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-muted-foreground text-lg mb-2">Data tidak ditemukan</div>
+              <div className="text-muted-foreground text-sm">
+                Tidak ada peserta yang sesuai dengan pencarian Anda.
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Desktop View */}
+              <div className="hidden sm:block">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {currentParticipants.map((participant) => (
+                    <ParticipantCard 
+                      key={participant.id} 
+                      participant={participant}
+                      onUpload={() => {
+                        setSelectedParticipant(participant);
+                        navigate(`/exams/${id}/upload/${participant.id}`);
+                      }}
+                      onView={() => navigate(`/exams/${id}/participant/${participant.id}`)}
+                      onEdit={() => navigate(`/exams/${id}/edit/${participant.id}`)}
+                      getStatusColor={getStatusColor}
+                      getStatusIcon={getStatusIcon}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Mobile Carousel */}
+              <div className="block sm:hidden">
+                <Carousel className="w-full max-w-xs mx-auto">
+                  <CarouselContent>
+                    {currentParticipants.map((participant) => (
+                      <CarouselItem key={participant.id}>
+                        <ParticipantCard 
+                          participant={participant}
+                          onUpload={() => {
+                            setSelectedParticipant(participant);
+                            navigate(`/exams/${id}/upload/${participant.id}`);
+                          }}
+                          onView={() => navigate(`/exams/${id}/participant/${participant.id}`)}
+                          onEdit={() => navigate(`/exams/${id}/edit/${participant.id}`)}
+                          getStatusColor={getStatusColor}
+                          getStatusIcon={getStatusIcon}
+                        />
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious />
+                  <CarouselNext />
+                </Carousel>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Pagination className="mt-6">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        href="#"
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                      />
+                    </PaginationItem>
                     
-                    {participant.status === 'completed' ? (
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">Nilai:</span>
-                          <span className="font-medium text-primary">{participant.score}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewAnswer(participant)}
-                            className="flex-1"
-                          >
-                            <Eye className="h-3 w-3 mr-1" />
-                            Detail
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditScore(participant)}
-                            className="flex-1"
-                          >
-                            <Edit className="h-3 w-3 mr-1" />
-                            Edit
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <Button
-                        onClick={() => handleUploadAnswer(participant)}
-                        className="w-full bg-gradient-secondary hover:opacity-90"
-                        size="sm"
-                      >
-                        <Upload className="h-3 w-3 mr-1" />
-                        Upload Jawaban
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          href="#"
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        href="#"
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {/* Upload Answer Modal */}
-      <Dialog open={isUploadAnswerOpen} onOpenChange={setIsUploadAnswerOpen}>
-        <DialogContent className="sm:max-w-md">
+      {/* Modals */}
+
+      {/* Info Questions Modal */}
+      <Dialog open={isInfoQuestionsOpen} onOpenChange={setIsInfoQuestionsOpen}>
+        <DialogContent className="sm:max-w-2xl max-w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Upload Jawaban - {selectedParticipant?.name}</DialogTitle>
+            <DialogTitle>Informasi Soal Ujian</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
-              <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground mb-2">Pilih foto jawaban siswa</p>
-              <Input type="file" accept="image/*" className="max-w-xs mx-auto" />
+            <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+              <div>
+                <Label className="text-sm text-muted-foreground">Jumlah Soal</Label>
+                <p className="font-medium">{questions.length} soal</p>
+              </div>
+              <div>
+                <Label className="text-sm text-muted-foreground">Jenis Ujian</Label>
+                <p className="font-medium">Essay</p>
+              </div>
             </div>
-            <div className="flex gap-3">
-              <Button onClick={handleProcessUpload} className="flex-1 bg-gradient-primary hover:opacity-90">
-                Upload & Proses
+            
+            <div className="space-y-3">
+              <Label>Daftar Soal</Label>
+              {questions.map((question, index) => (
+                <div key={index} className="p-3 bg-muted/20 rounded-lg">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="font-medium text-sm text-muted-foreground">Soal {index + 1}</span>
+                    {questionImages[index] && (
+                      <Badge variant="outline" className="text-xs">Bergambar</Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-foreground">{question}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Questions Modal */}
+      <Dialog open={isEditQuestionsOpen} onOpenChange={setIsEditQuestionsOpen}>
+        <DialogContent className="sm:max-w-4xl max-w-[95vw] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Soal Ujian</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {[1, 2, 3, 4, 5].map((num) => (
+              <div key={num} className="space-y-4 p-4 border rounded-lg">
+                <Label className="text-lg font-semibold">Soal {num}</Label>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Left side - Question and Answer Key */}
+                  <div className="space-y-3">
+                    <div>
+                      <Label>Pertanyaan</Label>
+                      <Textarea
+                        value={questions[num - 1] || ''}
+                        onChange={(e) => {
+                          const newQuestions = [...questions];
+                          newQuestions[num - 1] = e.target.value;
+                          setQuestions(newQuestions);
+                        }}
+                        placeholder={`Masukkan soal nomor ${num}`}
+                        className="min-h-[100px]"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label>Kunci Jawaban</Label>
+                      <Textarea
+                        value={answerKeys[num - 1] || ''}
+                        onChange={(e) => {
+                          const newAnswerKeys = [...answerKeys];
+                          newAnswerKeys[num - 1] = e.target.value;
+                          setAnswerKeys(newAnswerKeys);
+                        }}
+                        placeholder={`Masukkan kunci jawaban nomor ${num}`}
+                        className="min-h-[80px]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right side - Image upload */}
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id={`image-toggle-${num}`}
+                        checked={!!questionImages[num - 1]}
+                        onCheckedChange={(checked) => {
+                          if (!checked) {
+                            setQuestionImages(prev => {
+                              const newImages = { ...prev };
+                              delete newImages[num - 1];
+                              return newImages;
+                            });
+                          } else {
+                            fileInputRef.current?.click();
+                          }
+                        }}
+                      />
+                      <Label htmlFor={`image-toggle-${num}`}>Tambahkan gambar?</Label>
+                    </div>
+                    
+                    {questionImages[num - 1] && (
+                      <div className="space-y-3">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleImageUpload(num - 1, file);
+                          }}
+                        />
+                        
+                        <Button
+                          variant="outline"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="w-full"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Pilih Gambar
+                        </Button>
+                        
+                        {questionImages[num - 1]?.preview && (
+                          <div className="space-y-2">
+                            <div className="relative">
+                              <img
+                                src={questionImages[num - 1]?.preview}
+                                alt={`Question ${num} image`}
+                                className={`w-full h-40 object-cover rounded-lg ${
+                                  questionImages[num - 1]?.grayscale ? 'grayscale' : ''
+                                }`}
+                              />
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              <Switch
+                                id={`grayscale-${num}`}
+                                checked={questionImages[num - 1]?.grayscale || false}
+                                onCheckedChange={() => toggleImageGrayscale(num - 1)}
+                              />
+                              <Label htmlFor={`grayscale-${num}`} className="text-sm">
+                                Hitam putih
+                              </Label>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            <div className="flex gap-3 pt-4">
+              <Button onClick={handleSaveQuestions} className="flex-1 bg-gradient-primary hover:opacity-90">
+                Simpan
               </Button>
-              <Button variant="outline" onClick={() => setIsUploadAnswerOpen(false)} className="flex-1">
+              <Button variant="outline" onClick={() => setIsEditQuestionsOpen(false)} className="flex-1">
                 Batal
               </Button>
             </div>
@@ -375,136 +602,162 @@ export default function ExamDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Processing Modal */}
-      <Dialog open={isProcessingOpen} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md">
+      {/* Add Participants Modal */}
+      <Dialog open={isAddParticipantsOpen} onOpenChange={setIsAddParticipantsOpen}>
+        <DialogContent className="sm:max-w-2xl max-w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Memproses...</DialogTitle>
+            <DialogTitle>Tambah Peserta Ujian</DialogTitle>
           </DialogHeader>
-          <div className="text-center py-8">
-            <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Sedang memproses jawaban...</p>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* View/Edit Answer Modal */}
-      <Dialog open={isViewAnswerOpen} onOpenChange={setIsViewAnswerOpen}>
-        <DialogContent className="sm:max-w-4xl max-w-[95vw] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Jawaban - {selectedParticipant?.name}</DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left: Image */}
-            <div>
-              <Label>Foto Jawaban</Label>
-              <div className="mt-2 border rounded-lg p-4 bg-muted/10 min-h-[300px] flex items-center justify-center">
-                <p className="text-muted-foreground">Gambar jawaban akan ditampilkan di sini</p>
-              </div>
-            </div>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Pilih siswa yang akan mengikuti ujian. Siswa yang belum mengikuti ujian akan ditampilkan di atas.
+            </p>
             
-            {/* Right: Answers */}
-            <div className="space-y-4">
-              <Label>Jawaban Siswa</Label>
-              {[1, 2, 3, 4, 5].map((num) => (
-                <div key={num}>
-                  <Label className="text-sm">Jawaban {num}</Label>
-                  <Textarea
-                    value={uploadedAnswers[num - 1]}
-                    onChange={(e) => {
-                      const newAnswers = [...uploadedAnswers];
-                      newAnswers[num - 1] = e.target.value;
-                      setUploadedAnswers(newAnswers);
-                    }}
-                    className="mt-1"
-                    rows={2}
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {/* Sort students: not in exam first, then in exam */}
+              {students
+                .sort((a, b) => (a.inExam === b.inExam ? 0 : a.inExam ? 1 : -1))
+                .map((student) => (
+                <div
+                  key={student.id}
+                  className={`flex items-center justify-between p-3 rounded-lg border-2 transition-colors ${
+                    student.inExam 
+                      ? 'border-success/30 bg-success/5' 
+                      : 'border-destructive/30 bg-destructive/5'
+                  }`}
+                >
+                  <div>
+                    <p className="font-medium">{student.name}</p>
+                    <p className="text-sm text-muted-foreground">NISN: {student.nisn}</p>
+                  </div>
+                  <Switch
+                    checked={student.inExam}
+                    onCheckedChange={() => handleToggleParticipant(student.id)}
                   />
                 </div>
               ))}
-              
-              <Button onClick={handleProcessGrading} className="w-full bg-gradient-primary hover:opacity-90 mt-4">
-                Proses Penilaian
+            </div>
+            
+            <div className="flex gap-3 pt-4">
+              <Button onClick={handleSaveParticipants} className="flex-1 bg-gradient-primary hover:opacity-90">
+                Simpan
+              </Button>
+              <Button variant="outline" onClick={() => setIsAddParticipantsOpen(false)} className="flex-1">
+                Batal
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Score Result Modal */}
-      <Dialog open={isScoreResultOpen} onOpenChange={setIsScoreResultOpen}>
-        <DialogContent className="sm:max-w-lg max-w-[95vw] max-h-[90vh] overflow-y-auto">
+      {/* Preview PDF Modal */}
+      <Dialog open={isPreviewPdfOpen} onOpenChange={setIsPreviewPdfOpen}>
+        <DialogContent className="sm:max-w-4xl max-w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Hasil Penilaian - {selectedParticipant?.name}</DialogTitle>
+            <DialogTitle>Preview Lembar Jawaban PDF</DialogTitle>
           </DialogHeader>
-          <div className="space-y-6">
-            {/* Total Score Section */}
-            <div className="flex flex-col items-center justify-center p-6 bg-gradient-card rounded-lg">
-              <h3 className="text-lg font-semibold mb-4">Nilai Total</h3>
-              <ProgressCircle value={editingScore} size={150} strokeWidth={10}>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary">{editingScore}</div>
-                  <div className="text-sm text-muted-foreground">dari 100</div>
+          <div className="space-y-4">
+            <div className="bg-white text-black p-8 rounded-lg border">
+              <div className="text-center mb-6">
+                <h2 className="text-xl font-bold">{examDetail.title}</h2>
+                <p className="text-sm text-gray-600">Kelas: {examDetail.class} | Mata Pelajaran: {examDetail.subject}</p>
+                <p className="text-sm text-gray-600">Tanggal: {new Date(examDetail.date).toLocaleDateString('id-ID')}</p>
+              </div>
+              
+              <div className="mb-6">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>Nama: ________________________</div>
+                  <div>NISN: ________________________</div>
                 </div>
-              </ProgressCircle>
-            </div>
-            
-            {/* Individual Scores Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Nilai Per Soal</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {[1, 2, 3, 4, 5].map((num) => (
-                  <div key={num} className="flex justify-between items-center p-4 bg-muted/30 rounded-lg border shadow-sm">
-                    <span className="font-medium">Soal {num}</span>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        defaultValue={Math.floor(editingScore / 5)}
-                        className="w-16 text-center"
-                        max="20"
-                        min="0"
-                      />
-                      <span className="text-sm text-muted-foreground">/20</span>
+              </div>
+              
+              <div className="space-y-6">
+                {questions.map((question, index) => (
+                  <div key={index} className="space-y-2">
+                    <p className="font-medium">{index + 1}. {question}</p>
+                    {questionImages[index]?.preview && (
+                      <div className="w-32 h-24 border-2 border-dashed border-gray-300 rounded flex items-center justify-center text-gray-500 text-xs">
+                        [Gambar Soal]
+                      </div>
+                    )}
+                    <div className="border-b border-gray-300 pb-8 mb-4">
+                      <p className="text-xs text-gray-500 mb-2">Jawaban:</p>
+                      {Array.from({ length: 4 }).map((_, lineIndex) => (
+                        <div key={lineIndex} className="border-b border-gray-200 h-6 mb-2"></div>
+                      ))}
                     </div>
                   </div>
                 ))}
               </div>
-              
-              <Button onClick={handleSaveScore} className="w-full bg-gradient-primary hover:opacity-90 mt-6">
-                Simpan Nilai
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Score Modal */}
-      <Dialog open={isEditScoreOpen} onOpenChange={setIsEditScoreOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Nilai - {selectedParticipant?.name}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Nilai Total</Label>
-              <Input
-                type="number"
-                value={editingScore}
-                onChange={(e) => setEditingScore(parseInt(e.target.value))}
-                max="100"
-                min="0"
-              />
-            </div>
-            <div className="flex gap-3">
-              <Button onClick={() => setIsEditScoreOpen(false)} className="flex-1 bg-gradient-primary hover:opacity-90">
-                Simpan
-              </Button>
-              <Button variant="outline" onClick={() => setIsEditScoreOpen(false)} className="flex-1">
-                Batal
-              </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// Separate ParticipantCard component
+function ParticipantCard({ participant, onUpload, onView, onEdit, getStatusColor, getStatusIcon }: any) {
+  const StatusIcon = getStatusIcon(participant.status);
+  
+  return (
+    <Card className="bg-gradient-card border-0 shadow-hover">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-primary rounded-full flex items-center justify-center text-white font-medium">
+              {participant.name.charAt(0)}
+            </div>
+            <div>
+              <h3 className="font-medium text-sm">{participant.name}</h3>
+              <p className="text-xs text-muted-foreground">NISN: {participant.nisn}</p>
+            </div>
+          </div>
+          <Badge className={getStatusColor(participant.status)}>
+            <StatusIcon className="h-3 w-3 mr-1" />
+            {participant.status === 'completed' ? 'Selesai' : 'Belum Upload'}
+          </Badge>
+        </div>
+        
+        {participant.status === 'completed' ? (
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Nilai:</span>
+              <span className="font-medium text-primary">{participant.score}</span>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onView(participant)}
+                className="flex-1"
+              >
+                <Eye className="h-3 w-3 mr-1" />
+                Info
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(participant)}
+                className="flex-1"
+              >
+                <Edit className="h-3 w-3 mr-1" />
+                Edit
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            onClick={() => onUpload(participant)}
+            className="w-full bg-gradient-secondary hover:opacity-90"
+            size="sm"
+          >
+            <Upload className="h-3 w-3 mr-1" />
+            Upload Jawaban
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }
