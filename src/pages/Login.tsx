@@ -11,6 +11,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -40,7 +42,7 @@ export default function Login() {
       navigate('/dashboard');
     } else {
       setIsLogin(true);
-      setFormData({ email: '', password: '', confirmPassword: '' });
+      setFormData({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
     }
   };
 
@@ -72,6 +74,37 @@ export default function Login() {
           
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {!isLogin && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">Nama Depan</Label>
+                    <Input
+                      id="firstName"
+                      name="firstName"
+                      type="text"
+                      placeholder="Nama depan"
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      required
+                      className="h-12"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Nama Belakang</Label>
+                    <Input
+                      id="lastName"
+                      name="lastName"
+                      type="text"
+                      placeholder="Nama belakang"
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      required
+                      className="h-12"
+                    />
+                  </div>
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -144,7 +177,7 @@ export default function Login() {
                   className="p-0 ml-1 h-auto text-primary hover:text-primary-dark"
                   onClick={() => {
                     setIsLogin(!isLogin);
-                    setFormData({ email: '', password: '', confirmPassword: '' });
+                    setFormData({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
                   }}
                 >
                   {isLogin ? 'Daftar sekarang' : 'Masuk di sini'}
