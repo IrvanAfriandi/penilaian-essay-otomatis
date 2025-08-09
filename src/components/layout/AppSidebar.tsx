@@ -27,6 +27,8 @@ import { cn } from '@/lib/utils';
 const menuItems = [
   { title: 'Dashboard', url: '/dashboard', icon: Home },
   { title: 'Data Siswa', url: '/students', icon: Users },
+  { title: 'Data Kelas', url: '/classes', icon: GraduationCap },
+  { title: 'Data Mata Pelajaran', url: '/subjects', icon: BookOpen },
   { title: 'Data Ujian', url: '/exams', icon: FileText },
   { title: 'Profil Guru', url: '/profile', icon: User },
 ];
