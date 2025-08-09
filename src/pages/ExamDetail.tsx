@@ -16,29 +16,29 @@ import { ProgressCircle } from '@/components/ui/progress-circle';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-// Mock data for exam details
+// Mock exam data
 const examDetail = {
   id: 1,
-  title: 'Ujian Bahasa Indonesia - Kelas 5A',
-  subject: 'Bahasa Indonesia',
-  class: '5A',
-  date: '2024-01-20',
-  totalParticipants: 32,
-  completedParticipants: 28,
-  status: 'Berlangsung',
+  title: "Ujian Tengah Semester - Matematika",
+  subject: "Matematika",
+  class: "XII IPA 1",
+  date: "2024-03-15",
+  totalParticipants: 30,
+  completedParticipants: 18,
+  status: "Berlangsung",
   questions: [
-    'Jelaskan pengertian dari kata "gotong royong" dan berikan contoh penerapannya dalam kehidupan sehari-hari!',
-    'Ceritakan pengalaman liburan yang paling berkesan menurut kalian dengan menggunakan kalimat yang baik dan benar!',
-    'Apa manfaat membaca buku? Jelaskan minimal 3 manfaat dan berikan alasannya!',
-    'Buatlah pantun dengan tema lingkungan hidup yang terdiri dari 4 baris!',
-    'Jelaskan perbedaan antara dongeng dan fabel beserta masing-masing contohnya!'
+    "Berdasarkan gambar grafik fungsi di atas, tentukan nilai limit ketika x mendekati 2",
+    "Hitunglah turunan dari fungsi f(x) = 3x² + 5x - 2",
+    "Perhatikan diagram geometri berikut. Tentukan luas daerah yang diarsir",
+    "Tentukan persamaan garis singgung kurva y = x² - 4x + 3 di titik (2, -1)",
+    "Selesaikan sistem persamaan: 2x + 3y = 12 dan x - y = 1"
   ],
   answerKeys: [
-    'Gotong royong adalah kegiatan bersama-sama untuk mencapai tujuan bersama. Contoh: kerja bakti membersihkan lingkungan.',
-    'Jawaban bervariasi sesuai pengalaman siswa dengan struktur cerita yang baik.',
-    'Manfaat membaca: menambah wawasan, melatih konsentrasi, mengembangkan imajinasi.',
-    'Pantun dengan tema lingkungan yang memenuhi syarat A-B-A-B.',
-    'Dongeng: cerita rakyat dengan tokoh manusia. Fabel: cerita dengan tokoh hewan.'
+    "4",
+    "6x + 5",
+    "12 satuan luas",
+    "y = -1",
+    "x = 3, y = 2"
   ]
 };
 
@@ -64,7 +64,11 @@ export default function ExamDetail() {
   const [questions, setQuestions] = useState(examDetail.questions);
   const [answerKeys, setAnswerKeys] = useState(examDetail.answerKeys);
   const [students, setStudents] = useState(allStudents);
-  const [questionImages, setQuestionImages] = useState<{ [key: number]: { file: File | null, preview: string | null, grayscale: boolean } }>({});
+  const [questionImages, setQuestionImages] = useState<{ [key: number]: { file: File | null, preview: string | null, grayscale: boolean } }>({
+    0: { file: null, preview: 'https://via.placeholder.com/400x300/3b82f6/ffffff?text=Grafik+Fungsi+Limit', grayscale: false },
+    2: { file: null, preview: 'https://via.placeholder.com/400x300/10b981/ffffff?text=Diagram+Geometri', grayscale: false }
+  });
+  const [currentImageIndex, setCurrentImageIndex] = useState<number | null>(null);
   const [participantSearch, setParticipantSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   
@@ -451,7 +455,7 @@ export default function ExamDetail() {
               </div>
               <div>
                 <Label className="text-sm text-muted-foreground">Jenis Ujian</Label>
-                <p className="font-medium">Essay</p>
+                <p className="font-medium">Isian Singkat</p>
               </div>
             </div>
             
@@ -518,46 +522,39 @@ export default function ExamDetail() {
 
                   {/* Right side - Image upload */}
                   <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id={`image-toggle-${num}`}
-                        checked={!!questionImages[num - 1]}
-                        onCheckedChange={(checked) => {
-                          if (!checked) {
-                            setQuestionImages(prev => {
-                              const newImages = { ...prev };
-                              delete newImages[num - 1];
-                              return newImages;
-                            });
-                          } else {
-                            fileInputRef.current?.click();
-                          }
-                        }}
-                      />
-                      <Label htmlFor={`image-toggle-${num}`}>Tambahkan gambar?</Label>
-                    </div>
+                     <div className="flex items-center space-x-2">
+                       <Switch
+                         id={`image-toggle-${num}`}
+                         checked={!!questionImages[num - 1]}
+                         onCheckedChange={(checked) => {
+                           if (!checked) {
+                             setQuestionImages(prev => {
+                               const newImages = { ...prev };
+                               delete newImages[num - 1];
+                               return newImages;
+                             });
+                           } else {
+                             setCurrentImageIndex(num - 1);
+                             fileInputRef.current?.click();
+                           }
+                         }}
+                       />
+                       <Label htmlFor={`image-toggle-${num}`}>Tambahkan gambar?</Label>
+                     </div>
                     
-                    {questionImages[num - 1] && (
-                      <div className="space-y-3">
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleImageUpload(num - 1, file);
-                          }}
-                        />
-                        
-                        <Button
-                          variant="outline"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="w-full"
-                        >
-                          <Upload className="mr-2 h-4 w-4" />
-                          Pilih Gambar
-                        </Button>
+                     {questionImages[num - 1] && (
+                       <div className="space-y-3">
+                         <Button
+                           variant="outline"
+                           onClick={() => {
+                             setCurrentImageIndex(num - 1);
+                             fileInputRef.current?.click();
+                           }}
+                           className="w-full"
+                         >
+                           <Upload className="mr-2 h-4 w-4" />
+                           {questionImages[num - 1]?.preview ? 'Ganti Gambar' : 'Pilih Gambar'}
+                         </Button>
                         
                         {questionImages[num - 1]?.preview && (
                           <div className="space-y-2">
@@ -589,6 +586,20 @@ export default function ExamDetail() {
                 </div>
               </div>
             ))}
+            
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file && currentImageIndex !== null) {
+                  handleImageUpload(currentImageIndex, file);
+                }
+              }}
+            />
             
             <div className="flex gap-3 pt-4">
               <Button onClick={handleSaveQuestions} className="flex-1 bg-gradient-primary hover:opacity-90">
